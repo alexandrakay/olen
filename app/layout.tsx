@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Outfit, Lexend } from "next/font/google";
 import "./globals.css";
+import { Providers } from "./providers";
 
 const outfit = Outfit({
   variable: "--font-outfit",
@@ -29,7 +30,9 @@ export default function RootLayout({
       lang="en"
       className={`${outfit.variable} ${lexend.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full">
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }
