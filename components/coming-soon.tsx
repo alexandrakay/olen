@@ -1,7 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import emailjs from "@emailjs/browser";
 import { joinWaitlist } from "@/app/actions/waitlist";
+
+const EMAILJS_SERVICE_ID = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID!;
+const EMAILJS_TEMPLATE_ID = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID!;
+const EMAILJS_PUBLIC_KEY = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY!;
 
 export function ComingSoon() {
   const [email, setEmail] = useState("");
@@ -14,13 +19,25 @@ export function ComingSoon() {
 
     setLoading(true);
     const result = await joinWaitlist(email);
-    setLoading(false);
 
     if (result.success) {
+      // Best-effort auto-reply — never block or surface errors to the user
+      try {
+        await emailjs.send(
+          EMAILJS_SERVICE_ID,
+          EMAILJS_TEMPLATE_ID,
+          { to_email: email },
+          { publicKey: EMAILJS_PUBLIC_KEY }
+        );
+      } catch {
+        // intentionally silent
+      }
       setStatus("success");
     } else {
       setStatus("error");
     }
+
+    setLoading(false);
   }
 
   return (
