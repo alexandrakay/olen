@@ -1,0 +1,44 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Waitlist — unauthenticated writes allowed (coming soon page)
+    match /waitlist/{email} {
+      allow read: if false;
+      allow write: if true;
+    }
+
+    // All user data — authenticated users can only access their own subtree
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+
+      match /contexts/{contextId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+
+      match /tasks/{taskId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+
+      match /checkins/{date} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+
+      match /downloads/{date} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+
+      match /patterns/{patternId} {
+        allow read: if request.auth != null && request.auth.uid == uid;
+        // Patterns are written by Cloud Functions (Admin SDK bypasses these rules)
+        allow write: if false;
+      }
+    }
+
+    // Deny everything else
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
