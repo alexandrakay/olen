@@ -24,7 +24,7 @@ export function ComingSoon() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#FAF6EE] flex items-center justify-center px-8">
+    <div className="relative min-h-screen overflow-hidden bg-[#FAF6EE]">
       {/* Blur orbs */}
       <div
         className="pointer-events-none absolute -top-32 -left-32 h-[28rem] w-[28rem] rounded-full bg-[#F0956A]"
@@ -39,61 +39,119 @@ export function ComingSoon() {
         style={{ filter: "blur(70px)", opacity: 0.15 }}
       />
 
-      {/* Content */}
-      <div className="relative z-10 w-full max-w-md">
-        {/* Logo */}
-        <p
-          className="mb-12 text-[#3D2C20]"
-          style={{ fontFamily: "var(--font-outfit)", fontWeight: 600, fontSize: "32px" }}
+      {/* Centering shell — inline padding/sizing bypasses Tailwind v4 flex quirks */}
+      <div
+        className="flex min-h-screen items-center justify-center"
+        style={{ padding: "0 2rem" }}
+      >
+        <div
+          className="relative z-10"
+          style={{ width: "100%", maxWidth: "28rem" }}
         >
-          olen<span className="text-[#F0956A]">.</span>
-        </p>
-
-        {/* Tagline */}
-        <p
-          className="mb-12 text-[#3D2C20] leading-relaxed"
-          style={{ fontFamily: "var(--font-lexend)", fontWeight: 300, fontSize: "22px" }}
-        >
-          not everything. just the next thing. olen.
-        </p>
-
-        {/* Email form */}
-        {status === "success" ? (
+          {/* Logo */}
           <p
             className="text-[#3D2C20]"
-            style={{ fontFamily: "var(--font-lexend)", fontWeight: 300, fontSize: "15px" }}
+            style={{
+              fontFamily: "var(--font-outfit)",
+              fontWeight: 600,
+              fontSize: "32px",
+              marginBottom: "3rem",
+            }}
           >
-            you&apos;re on the list.
+            olen<span className="text-[#F0956A]">.</span>
           </p>
-        ) : (
-          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="your@email.com"
-              required
-              className="w-full rounded-[8px] border border-[#EDE4D4] bg-white/70 px-5 py-4 text-[#3D2C20] placeholder-[#EDE4D4] outline-none focus:border-[#F0956A] transition-colors"
+
+          {/* Tagline */}
+          <p
+            className="text-[#3D2C20]"
+            style={{
+              fontFamily: "var(--font-lexend)",
+              fontWeight: 300,
+              fontSize: "22px",
+              lineHeight: 1.6,
+              marginBottom: "3rem",
+            }}
+          >
+            not everything. just the next thing. olen.
+          </p>
+
+          {/* Email form */}
+          {status === "success" ? (
+            <p
+              className="text-[#3D2C20]"
               style={{ fontFamily: "var(--font-lexend)", fontWeight: 300, fontSize: "16px" }}
-            />
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-[8px] bg-[#F0956A] px-5 py-4 text-[#FAF6EE] transition-opacity hover:opacity-90 disabled:opacity-60"
-              style={{ fontFamily: "var(--font-lexend)", fontWeight: 400, fontSize: "16px" }}
             >
-              {loading ? "..." : "get early access"}
-            </button>
-            {status === "error" && (
-              <p
-                className="text-[#3D2C20]/50"
-                style={{ fontFamily: "var(--font-lexend)", fontWeight: 300, fontSize: "12px" }}
+              you&apos;re on the list.
+            </p>
+          ) : (
+            <form
+              onSubmit={handleSubmit}
+              style={{ display: "flex", flexDirection: "column", gap: "12px" }}
+            >
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                required
+                style={{
+                  width: "100%",
+                  boxSizing: "border-box",
+                  borderRadius: "8px",
+                  border: "1px solid #EDE4D4",
+                  background: "rgba(255,255,255,0.7)",
+                  padding: "16px 20px",
+                  color: "#3D2C20",
+                  outline: "none",
+                  fontFamily: "var(--font-lexend)",
+                  fontWeight: 300,
+                  fontSize: "16px",
+                }}
+                onFocus={(e) => (e.currentTarget.style.borderColor = "#F0956A")}
+                onBlur={(e) => (e.currentTarget.style.borderColor = "#EDE4D4")}
+              />
+              <button
+                type="submit"
+                disabled={loading}
+                style={{
+                  width: "100%",
+                  boxSizing: "border-box",
+                  borderRadius: "8px",
+                  background: "#F0956A",
+                  padding: "16px 20px",
+                  color: "#FAF6EE",
+                  border: "none",
+                  cursor: loading ? "not-allowed" : "pointer",
+                  opacity: loading ? 0.6 : 1,
+                  fontFamily: "var(--font-lexend)",
+                  fontWeight: 400,
+                  fontSize: "16px",
+                  transition: "opacity 0.15s",
+                }}
+                onMouseEnter={(e) => {
+                  if (!loading) e.currentTarget.style.opacity = "0.9";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.opacity = loading ? "0.6" : "1";
+                }}
               >
-                something went wrong. try again.
-              </p>
-            )}
-          </form>
-        )}
+                {loading ? "..." : "get early access"}
+              </button>
+              {status === "error" && (
+                <p
+                  style={{
+                    color: "rgba(61,44,32,0.5)",
+                    fontFamily: "var(--font-lexend)",
+                    fontWeight: 300,
+                    fontSize: "12px",
+                  }}
+                >
+                  something went wrong. try again.
+                </p>
+              )}
+            </form>
+          )}
+        </div>
       </div>
     </div>
   );
