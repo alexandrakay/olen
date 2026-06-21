@@ -11,6 +11,9 @@ initializeApp();
 // Sprint 6: non-negotiable null resolver (nightly)
 // export { resolveNonNegNulls } from "./scheduled/non-neg-resolver";
 
+// Sprint 3: morning notifications (every 30 min)
+export { sendMorningNotifications } from "./scheduled/send-notifications";
+
 // Sprint 1: onboarding recovery (nightly)
 // export { recoverOnboarding } from "./scheduled/onboarding-recovery";
 
