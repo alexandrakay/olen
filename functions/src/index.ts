@@ -6,7 +6,7 @@ initializeApp();
 // export { checkTrialExpiry } from "./scheduled/trial-expiry";
 
 // Sprint 6: pattern writer (nightly scheduled function)
-// export { writePatterns } from "./scheduled/pattern-writer";
+export { writePatterns } from "./scheduled/pattern-writer";
 
 // Sprint 6: non-negotiable null resolver (nightly)
 // export { resolveNonNegNulls } from "./scheduled/non-neg-resolver";
