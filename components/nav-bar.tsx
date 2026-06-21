@@ -47,7 +47,7 @@ export function NavBar({ evening = false }: { evening?: boolean }) {
         left: 0,
         right: 0,
         height: "64px",
-        background: evening ? "#2A1F2E" : "#FAF6EE",
+        background: evening ? "var(--color-plum)" : "#FAF6EE",
         borderTop: `1px solid ${evening ? "rgba(250,246,238,0.08)" : "#EDE4D4"}`,
         display: "flex",
         alignItems: "center",
