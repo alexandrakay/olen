@@ -15,7 +15,7 @@ initializeApp();
 // export { recoverOnboarding } from "./scheduled/onboarding-recovery";
 
 // Sprint 2: energy inference on task creation
-// export { inferTaskEnergy } from "./triggers/infer-task-energy";
+export { inferTaskEnergy } from "./triggers/infer-task-energy";
 
 // Sprint 5: Stripe webhook handler
 // export { stripeWebhook } from "./https/stripe-webhook";
