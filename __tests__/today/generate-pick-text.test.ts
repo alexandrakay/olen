@@ -1,26 +1,24 @@
-import { buildPickTextPrompt, validatePickText, fallbackPickText } from "@/lib/pick-text";
-import type { ScoredCandidate, Context, Task } from "@/lib/types";
-import type { Timestamp } from "firebase/firestore";
+import { buildPickTextPrompt, validatePickText, fallbackPickText, type PickCandidateInput } from "@/lib/pick-text";
 
-function ts(d = new Date()) { return { toDate: () => d } as unknown as Timestamp; }
 const NOW = new Date("2026-06-20T09:00:00");
 
-const context: Context = {
-  id: "ctx1", label: "Work", previousLabel: null, description: "Client projects",
-  isNonNegotiable: false, nonNegotiableDetail: null, priority: 1, status: "active",
-  lastFocusedAt: ts(new Date("2026-06-14T09:00:00")), createdAt: ts(NOW),
+const taskCandidate: PickCandidateInput = {
+  type: "task",
+  taskTitle: "Send the invoice",
+  taskEstimatedMins: 20,
+  contextLabel: "Work",
+  contextDescription: "Client projects",
+  contextLastFocusedAtMs: new Date("2026-06-14T09:00:00").getTime(),
 };
 
-const task: Task = {
-  id: "t1", title: "Send the invoice", contextId: "ctx1", status: "inbox",
-  dueDate: null, energyRequired: "low", energyOverridden: false,
-  energyOverrideAt: null, energyOverrideValue: null, estimatedMins: 20,
-  promptVersion: null, snoozedUntil: null, snoozeCount: 0, pickedCount: 0,
-  completedAt: null, completedFrom: null, createdAt: ts(NOW),
+const ctxCandidate: PickCandidateInput = {
+  type: "context",
+  taskTitle: null,
+  taskEstimatedMins: null,
+  contextLabel: "Work",
+  contextDescription: "Client projects",
+  contextLastFocusedAtMs: new Date("2026-06-14T09:00:00").getTime(),
 };
-
-const taskCandidate: ScoredCandidate = { type: "task", task, context, score: 1.5 };
-const ctxCandidate: ScoredCandidate = { type: "context", context, score: 0.55 };
 
 test("buildPickTextPrompt includes task title for task pick", () => {
   const prompt = buildPickTextPrompt(taskCandidate, "Builder.", 3, 45, NOW);

@@ -1,20 +1,18 @@
 "use server";
 
 import Anthropic from "@anthropic-ai/sdk";
-import { buildPickTextPrompt, validatePickText, fallbackPickText, dayOnePickText } from "@/lib/pick-text";
-import type { ScoredCandidate } from "@/lib/types";
+import { buildPickTextPrompt, validatePickText, fallbackPickText, dayOnePickText, type PickCandidateInput } from "@/lib/pick-text";
 
 const client = new Anthropic();
 
 export async function generatePickText(
-  candidate: ScoredCandidate,
+  candidate: PickCandidateInput,
   bio: string,
   energyLevel: 1 | 2 | 3 | 4 | 5,
   timeAvailableMins: 20 | 45 | 75 | 120,
   completedDownloads: number,
   now: Date,
 ): Promise<{ text: string; promptVersion: string }> {
-  // Day-one branch: no learning data yet
   if (completedDownloads === 0) {
     return { text: dayOnePickText(candidate), promptVersion: "pick-v1-day-one" };
   }

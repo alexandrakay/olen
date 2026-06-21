@@ -17,7 +17,7 @@ import { PickCardFlow } from "@/components/today/pick-card-flow";
 import type { ScoringResult, ScoredCandidate, Context, Task } from "@/lib/types";
 import type { Timestamp } from "firebase/firestore";
 
-function ts(d = new Date()) { return { toDate: () => d } as unknown as Timestamp; }
+function ts(d = new Date()) { return { toDate: () => d, toMillis: () => d.getTime() } as unknown as Timestamp; }
 const NOW = new Date("2026-06-20T09:00:00");
 
 function makeCtx(id: string, label: string): Context {

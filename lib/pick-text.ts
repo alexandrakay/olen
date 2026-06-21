@@ -1,4 +1,11 @@
-import type { ScoredCandidate } from "@/lib/types";
+export interface PickCandidateInput {
+  type: "task" | "context";
+  taskTitle: string | null;
+  taskEstimatedMins: number | null;
+  contextLabel: string;
+  contextDescription: string;
+  contextLastFocusedAtMs: number | null;
+}
 
 const ENERGY_LABELS: Record<number, string> = {
   1: "very low", 2: "low", 3: "steady", 4: "good", 5: "high",
@@ -9,7 +16,7 @@ const TIME_LABELS: Record<number, string> = {
 };
 
 export function buildPickTextPrompt(
-  candidate: ScoredCandidate,
+  candidate: PickCandidateInput,
   bio: string,
   energyLevel: 1 | 2 | 3 | 4 | 5,
   timeAvailableMins: 20 | 45 | 75 | 120,
@@ -25,21 +32,20 @@ Voice rules:
 - For context picks: low-pressure, never imperative verbs. Acknowledge the gap without guilt.
 - Max 2 sentences, ~200 chars. If you'd go longer, cut mercilessly.`;
 
-  const daysSince = candidate.type === "context" && candidate.context.lastFocusedAt
-    ? Math.round((now.getTime() - candidate.context.lastFocusedAt.toDate().getTime()) / (1000 * 60 * 60 * 24))
+  const daysSince = candidate.type === "context" && candidate.contextLastFocusedAtMs != null
+    ? Math.round((now.getTime() - candidate.contextLastFocusedAtMs) / (1000 * 60 * 60 * 24))
     : null;
 
   let userMessage: string;
 
   if (candidate.type === "task") {
-    const t = candidate.task!;
-    const timeNote = t.estimatedMins ? ` Estimated: ${t.estimatedMins} min.` : "";
+    const timeNote = candidate.taskEstimatedMins ? ` Estimated: ${candidate.taskEstimatedMins} min.` : "";
     userMessage = `User bio: ${bio}
 Energy level: ${ENERGY_LABELS[energyLevel]}
 Time available: ${TIME_LABELS[timeAvailableMins]}
 Pick type: task
-Task title: ${t.title}
-Context: ${candidate.context.label}${timeNote}
+Task title: ${candidate.taskTitle}
+Context: ${candidate.contextLabel}${timeNote}
 
 Write the pick text.`;
   } else {
@@ -47,8 +53,8 @@ Write the pick text.`;
 Energy level: ${ENERGY_LABELS[energyLevel]}
 Time available: ${TIME_LABELS[timeAvailableMins]}
 Pick type: context (no tasks in this area)
-Context: ${candidate.context.label}
-Context description: ${candidate.context.description}
+Context: ${candidate.contextLabel}
+Context description: ${candidate.contextDescription}
 Days since last focused: ${daysSince ?? "unknown"}
 
 Write the pick text.`;
@@ -65,21 +71,19 @@ export function validatePickText(text: string): boolean {
 }
 
 export function fallbackPickText(
-  candidate: ScoredCandidate,
+  candidate: PickCandidateInput,
   energyLevel: 1 | 2 | 3 | 4 | 5,
   timeAvailableMins: 20 | 45 | 75 | 120,
 ): string {
   const timeLabel = TIME_LABELS[timeAvailableMins];
   const energyLabel = ENERGY_LABELS[energyLevel];
-  const name = candidate.type === "task"
-    ? candidate.task!.title
-    : candidate.context.label;
+  const name = candidate.type === "task" ? candidate.taskTitle : candidate.contextLabel;
   return `You have ${timeLabel} and your energy is ${energyLabel}. ${name} is up next.`;
 }
 
 const DAY_ONE_TEXT = (contextLabel: string) =>
   `You're just getting started — olen picked ${contextLabel} because you named it first. Check in tonight and it'll start learning.`;
 
-export function dayOnePickText(candidate: ScoredCandidate): string {
-  return DAY_ONE_TEXT(candidate.context.label);
+export function dayOnePickText(candidate: PickCandidateInput): string {
+  return DAY_ONE_TEXT(candidate.contextLabel);
 }

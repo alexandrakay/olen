@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { PickCard } from "@/components/today/pick-card";
 import { PostAcceptance } from "@/components/today/post-acceptance";
 import { generatePickText } from "@/app/actions/generate-pick-text";
-import { fallbackPickText } from "@/lib/pick-text";
+import { fallbackPickText, type PickCandidateInput } from "@/lib/pick-text";
 import { db } from "@/lib/firebase";
 import { doc, updateDoc, Timestamp } from "firebase/firestore";
 import type { ScoringResult, ScoredCandidate } from "@/lib/types";
@@ -46,12 +46,23 @@ export function PickCardFlow({
 
   const now = useRef(new Date());
 
+  function toPickInput(c: ScoredCandidate): PickCandidateInput {
+    return {
+      type: c.type,
+      taskTitle: c.task?.title ?? null,
+      taskEstimatedMins: c.task?.estimatedMins ?? null,
+      contextLabel: c.context.label,
+      contextDescription: c.context.description,
+      contextLastFocusedAtMs: c.context.lastFocusedAt?.toMillis() ?? null,
+    };
+  }
+
   async function fetchPickText(index: number, candidate: ScoredCandidate) {
     if (generatingRef.current.has(index)) return;
     generatingRef.current.add(index);
 
     const { text } = await generatePickText(
-      candidate, bio, energyLevel, timeAvailableMins, completedDownloads, now.current,
+      toPickInput(candidate), bio, energyLevel, timeAvailableMins, completedDownloads, now.current,
     );
     setPickTexts((prev) => ({ ...prev, [index]: text }));
   }
@@ -68,7 +79,7 @@ export function PickCardFlow({
   const candidate = queue[pickIndex];
 
   function currentPickText(): string {
-    return pickTexts[pickIndex] ?? fallbackPickText(candidate, energyLevel, timeAvailableMins);
+    return pickTexts[pickIndex] ?? fallbackPickText(toPickInput(candidate), energyLevel, timeAvailableMins);
   }
 
   async function handleAccept() {
