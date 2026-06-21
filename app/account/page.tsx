@@ -8,6 +8,7 @@ import { NavBar } from "@/components/nav-bar";
 import { ContextRow } from "@/components/account/context-row";
 import { ContextForm } from "@/components/account/context-form";
 import { ArchiveSheet } from "@/components/account/archive-sheet";
+import { NotificationSettings } from "@/components/account/notification-settings";
 import { canAddContext, SOFT_LIMIT_WARNING } from "@/lib/context-management";
 import { db } from "@/lib/firebase";
 import {
@@ -31,7 +32,7 @@ interface ArchivePending {
 }
 
 export default function AccountPage() {
-  const { firebaseUser, loading } = useAuth();
+  const { firebaseUser, userDoc, loading } = useAuth();
   const router = useRouter();
 
   const [contexts, setContexts] = useState<Context[]>([]);
@@ -39,6 +40,8 @@ export default function AccountPage() {
   const [showForm, setShowForm] = useState(false);
   const [warnDismissed, setWarnDismissed] = useState(false);
   const [archivePending, setArchivePending] = useState<ArchivePending | null>(null);
+  const [notifEnabled, setNotifEnabled] = useState(false);
+  const [notifTime, setNotifTime] = useState("08:00");
 
   useEffect(() => {
     if (!loading && !firebaseUser) router.replace("/");
@@ -152,6 +155,26 @@ export default function AccountPage() {
     },
     [firebaseUser, contexts]
   );
+
+  // Sync notification settings from userDoc
+  useEffect(() => {
+    if (!userDoc) return;
+    setNotifEnabled(userDoc.notificationsEnabled ?? false);
+    setNotifTime(userDoc.notificationTime ?? "08:00");
+  }, [userDoc]);
+
+  const handleNotifToggle = useCallback(async () => {
+    if (!firebaseUser) return;
+    const next = !notifEnabled;
+    setNotifEnabled(next);
+    await updateDoc(doc(db, `users/${firebaseUser.uid}`), { notificationsEnabled: next });
+  }, [firebaseUser, notifEnabled]);
+
+  const handleNotifTimeChange = useCallback(async (time: string) => {
+    if (!firebaseUser) return;
+    setNotifTime(time);
+    await updateDoc(doc(db, `users/${firebaseUser.uid}`), { notificationTime: time });
+  }, [firebaseUser]);
 
   if (loading) return <AuthLoading />;
   if (!firebaseUser) return null;
@@ -376,6 +399,13 @@ export default function AccountPage() {
             )}
           </div>
         )}
+
+        <NotificationSettings
+          enabled={notifEnabled}
+          notificationTime={notifTime}
+          onToggle={handleNotifToggle}
+          onTimeChange={handleNotifTimeChange}
+        />
       </div>
 
       {archivePendingCtx && archivePending && (
