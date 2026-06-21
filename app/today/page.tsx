@@ -9,6 +9,7 @@ import { MorningCheckin } from "@/components/today/morning-checkin";
 import { DayZero } from "@/components/today/day-zero";
 import { MorningUnavailable } from "@/components/today/morning-unavailable";
 import { PickCardFlow } from "@/components/today/pick-card-flow";
+import { MidDayView } from "@/components/today/midday-view";
 import { getAppState, type AppState } from "@/lib/app-state";
 import { computeQueue } from "@/lib/scoring";
 import { db } from "@/lib/firebase";
@@ -41,6 +42,8 @@ export default function TodayPage() {
   const [acceptedCandidate, setAcceptedCandidate] = useState<ScoredCandidate | null>(null);
   const [pickedSuggestion, setPickedSuggestion] = useState("");
   const [skipped, setSkipped] = useState(false);
+  const [pickedTask, setPickedTask] = useState<Task | null>(null);
+  const [pickedContext, setPickedContext] = useState<Context | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const isEvening = new Date().getHours() >= 18;
@@ -75,7 +78,35 @@ export default function TodayPage() {
     if (checkin) {
       if (checkin.userAccepted === true) {
         setPickedSuggestion(checkin.pickedSuggestion);
-        // Accepted — need candidate for mid-day display (loaded lazily when needed)
+        // Load picked task + context for mid-day display
+        const loads: Promise<void>[] = [];
+        if (checkin.pickedTaskId) {
+          loads.push(
+            getDoc(doc(db, "users", uid, "tasks", checkin.pickedTaskId)).then((s) => {
+              if (s.exists()) setPickedTask({ ...s.data(), id: s.id } as Task);
+            })
+          );
+        }
+        const ctxId = checkin.pickedContextId ?? null;
+        if (ctxId) {
+          loads.push(
+            getDoc(doc(db, "users", uid, "contexts", ctxId)).then((s) => {
+              if (s.exists()) setPickedContext({ ...s.data(), id: s.id } as Context);
+            })
+          );
+        } else if (checkin.pickedTaskId) {
+          // Context loaded after task — wait for task then load its context
+          loads.push(
+            getDoc(doc(db, "users", uid, "tasks", checkin.pickedTaskId)).then(async (s) => {
+              if (s.exists()) {
+                const t = { ...s.data(), id: s.id } as Task;
+                const cs = await getDoc(doc(db, "users", uid, "contexts", t.contextId));
+                if (cs.exists()) setPickedContext({ ...cs.data(), id: cs.id } as Context);
+              }
+            })
+          );
+        }
+        await Promise.all(loads);
       } else if (checkin.userAccepted === false) {
         setSkipped(true);
       }
@@ -143,6 +174,8 @@ export default function TodayPage() {
   function handleAccepted(candidate: ScoredCandidate, text: string) {
     setAcceptedCandidate(candidate);
     setPickedSuggestion(text);
+    if (candidate.type === "task") setPickedTask(candidate.task!);
+    setPickedContext(candidate.context);
   }
 
   function handleSkip() {
@@ -201,38 +234,14 @@ export default function TodayPage() {
         </div>
       )}
 
-      {showMidDay && (
+      {showMidDay && todayCheckin && (
         <div style={{ padding: "56px 24px 100px" }}>
-          {/* Mid-day holding — full implementation in #11 */}
-          {skipped ? (
-            <p style={{ fontFamily: "var(--font-lexend)", fontWeight: 300, fontSize: "18px", color: "#3D2C20" }}>
-              Take it easy today.
-            </p>
-          ) : (
-            <div>
-              {acceptedCandidate && (
-                <div style={{
-                  borderRadius: "12px", border: "1.5px solid #EDE4D4",
-                  background: "#F7F2EA", padding: "20px", marginBottom: "20px",
-                }}>
-                  <p style={{ fontFamily: "var(--font-outfit)", fontWeight: 500, fontSize: "20px", color: "#3D2C20", margin: "0 0 8px" }}>
-                    {acceptedCandidate.type === "task"
-                      ? acceptedCandidate.task!.title
-                      : acceptedCandidate.context.label}
-                  </p>
-                  <p style={{ fontFamily: "var(--font-lexend)", fontWeight: 300, fontSize: "14px", color: "rgba(61,44,32,0.6)", margin: 0 }}>
-                    {pickedSuggestion}
-                  </p>
-                </div>
-              )}
-              <p style={{ fontFamily: "var(--font-lexend)", fontWeight: 300, fontSize: "14px", color: "rgba(61,44,32,0.5)", margin: "16px 0 0" }}>
-                Full mid-day view coming in #11.
-              </p>
-            </div>
-          )}
-          <a href="/inbox" style={{ display: "block", marginTop: "20px", fontFamily: "var(--font-lexend)", fontWeight: 300, fontSize: "14px", color: "rgba(61,44,32,0.5)", textDecoration: "none" }}>
-            See your inbox →
-          </a>
+          <MidDayView
+            checkin={todayCheckin}
+            pickedTask={pickedTask}
+            pickedContext={pickedContext}
+            uid={firebaseUser!.uid}
+          />
         </div>
       )}
 
