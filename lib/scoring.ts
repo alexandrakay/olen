@@ -69,14 +69,22 @@ function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * Math.min(1, Math.max(0, t));
 }
 
+function todScore(ctx: ScoringContext): number {
+  const hour = ctx.now.getHours();
+  const match = ctx.patterns?.find(
+    (p) => p.type === "energy-window" && p.confidence >= 0.4 && p.hourRange && p.hourRange[0] === hour
+  );
+  return match ? match.confidence : 0;
+}
+
 function scoreTask(task: Task, context: Context, ctx: ScoringContext): number {
   return (
     urgencyScore(task, ctx.now) +
     energyScore(task, ctx.energyLevel) * 0.75 +
     timeScore(task, ctx.timeAvailableMins) * 0.65 +
     neglectScore(context, ctx.now) * 0.55 +
-    0 * lerp(0, 0.8, ctx.dataMaturity) + // todScore placeholder
-    0 * lerp(0, 0.6, ctx.dataMaturity)   // dowScore placeholder
+    todScore(ctx) * lerp(0, 0.8, ctx.dataMaturity) +
+    0 * lerp(0, 0.6, ctx.dataMaturity) // dowScore — pending day-of-week pattern type
   );
 }
 

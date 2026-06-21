@@ -133,6 +133,7 @@ export interface ScoringContext {
   timeAvailableMins: 20 | 45 | 75 | 120;
   energyLevel: 1 | 2 | 3 | 4 | 5;
   dataMaturity: number; // 0.0–1.0. min(1.0, completedDownloads / 60). Never written to Firestore.
+  patterns?: Pattern[]; // Optional — populated once pattern writer has run
 }
 
 export interface ScoredCandidate {
