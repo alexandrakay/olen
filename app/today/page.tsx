@@ -10,6 +10,7 @@ import { DayZero } from "@/components/today/day-zero";
 import { MorningUnavailable } from "@/components/today/morning-unavailable";
 import { PickCardFlow } from "@/components/today/pick-card-flow";
 import { MidDayView } from "@/components/today/midday-view";
+import { DownloadFlow } from "@/components/today/download-flow";
 import { getAppState, type AppState } from "@/lib/app-state";
 import { computeQueue } from "@/lib/scoring";
 import { db } from "@/lib/firebase";
@@ -44,6 +45,8 @@ export default function TodayPage() {
   const [skipped, setSkipped] = useState(false);
   const [pickedTask, setPickedTask] = useState<Task | null>(null);
   const [pickedContext, setPickedContext] = useState<Context | null>(null);
+  const [contexts, setContexts] = useState<Context[]>([]);
+  const [downloadDone, setDownloadDone] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const isEvening = new Date().getHours() >= 18;
@@ -59,11 +62,17 @@ export default function TodayPage() {
     const uid = firebaseUser!.uid;
     const dateStr = todayStr();
 
-    const [checkinSnap, anySnap, downloadsSnap] = await Promise.all([
+    const [checkinSnap, anySnap, downloadsSnap, contextsSnap] = await Promise.all([
       getDoc(doc(db, "users", uid, "checkins", dateStr)),
       getDocs(query(collection(db, "users", uid, "checkins"), limit(1))),
       getDocs(collection(db, "users", uid, "downloads")),
+      getDocs(collection(db, "users", uid, "contexts")),
     ]);
+    setContexts(
+      contextsSnap.docs
+        .map((d) => ({ ...d.data(), id: d.id }) as Context)
+        .filter((c) => c.status === "active")
+    );
 
     const checkin = checkinSnap.exists() ? (checkinSnap.data() as Checkin) : null;
     checkinRef.current = checkin;
@@ -124,9 +133,11 @@ export default function TodayPage() {
     ]);
 
     const tasks = tasksSnap.docs.map((d) => ({ ...d.data(), id: d.id }) as Task);
-    const contexts = contextsSnap.docs
+    const loadedContexts = contextsSnap.docs
       .map((d) => ({ ...d.data(), id: d.id }) as Context)
       .filter((c) => c.status === "active");
+    setContexts(loadedContexts);
+    const contexts = loadedContexts;
 
     const result = computeQueue(tasks, contexts, {
       now: new Date(),
@@ -259,12 +270,35 @@ export default function TodayPage() {
 
       {appState === "evening" && (
         <div style={{ padding: "56px 24px 100px" }}>
-          <p style={{ fontFamily: "var(--font-outfit)", fontWeight: 600, fontSize: "28px", color: "#FAF6EE", marginTop: 0 }}>
-            olen<span style={{ color: "#B8A4D8" }}>.</span>
-          </p>
-          <p style={{ fontFamily: "var(--font-lexend)", fontWeight: 300, fontSize: "18px", color: "#FAF6EE", opacity: 0.7, lineHeight: 1.6 }}>
-            Download coming in issue #12.
-          </p>
+          {downloadDone || !todayCheckin ? (
+            // Evening holding state — Download complete or day-zero evening
+            <div>
+              <p style={{
+                fontFamily: "var(--font-outfit)", fontWeight: 500, fontSize: "22px",
+                color: "#FAF6EE", margin: "0 0 8px",
+              }}>
+                Good evening.
+              </p>
+              <p style={{
+                fontFamily: "var(--font-lexend)", fontWeight: 300, fontSize: "15px",
+                color: "rgba(250,246,238,0.5)", margin: 0,
+              }}>
+                See you tomorrow.
+              </p>
+            </div>
+          ) : (
+            <DownloadFlow
+              checkin={todayCheckin}
+              pickedLabel={
+                pickedTask?.title ??
+                (pickedContext?.label ?? null)
+              }
+              pickedTask={pickedTask}
+              contexts={contexts}
+              uid={firebaseUser!.uid}
+              onComplete={() => setDownloadDone(true)}
+            />
+          )}
         </div>
       )}
 
