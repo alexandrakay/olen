@@ -1,15 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { AuthLoading } from "@/components/auth-loading";
 import { NavBar } from "@/components/nav-bar";
 import { MorningCheckin } from "@/components/today/morning-checkin";
 import { DayZero } from "@/components/today/day-zero";
-import { MidDayPlaceholder } from "@/components/today/mid-day-placeholder";
 import { MorningUnavailable } from "@/components/today/morning-unavailable";
+import { PickCardFlow } from "@/components/today/pick-card-flow";
 import { getAppState, type AppState } from "@/lib/app-state";
+import { computeQueue } from "@/lib/scoring";
 import { db } from "@/lib/firebase";
 import {
   doc,
@@ -19,9 +20,10 @@ import {
   collection,
   query,
   limit,
+  where,
   Timestamp,
 } from "firebase/firestore";
-import type { Checkin } from "@/lib/types";
+import type { Checkin, Task, Context, ScoringResult, ScoredCandidate } from "@/lib/types";
 
 function todayStr() {
   const d = new Date();
@@ -29,12 +31,20 @@ function todayStr() {
 }
 
 export default function TodayPage() {
-  const { firebaseUser, loading } = useAuth();
+  const { firebaseUser, userDoc, loading } = useAuth();
   const router = useRouter();
+
   const [appState, setAppState] = useState<AppState | null>(null);
+  const [todayCheckin, setTodayCheckin] = useState<Checkin | null>(null);
+  const [scoringResult, setScoringResult] = useState<ScoringResult | null>(null);
+  const [completedDownloads, setCompletedDownloads] = useState(0);
+  const [acceptedCandidate, setAcceptedCandidate] = useState<ScoredCandidate | null>(null);
+  const [pickedSuggestion, setPickedSuggestion] = useState("");
+  const [skipped, setSkipped] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const isEvening = new Date().getHours() >= 18;
+  const checkinRef = useRef<Checkin | null>(null);
 
   useEffect(() => {
     if (loading) return;
@@ -46,15 +56,55 @@ export default function TodayPage() {
     const uid = firebaseUser!.uid;
     const dateStr = todayStr();
 
-    const [checkinSnap, anySnap] = await Promise.all([
+    const [checkinSnap, anySnap, downloadsSnap] = await Promise.all([
       getDoc(doc(db, "users", uid, "checkins", dateStr)),
       getDocs(query(collection(db, "users", uid, "checkins"), limit(1))),
+      getDocs(collection(db, "users", uid, "downloads")),
     ]);
 
-    const todayCheckin = checkinSnap.exists() ? (checkinSnap.data() as Checkin) : null;
-    const hasAny = !anySnap.empty;
+    const checkin = checkinSnap.exists() ? (checkinSnap.data() as Checkin) : null;
+    checkinRef.current = checkin;
+    setTodayCheckin(checkin);
+    setCompletedDownloads(downloadsSnap.size);
 
-    setAppState(getAppState(new Date(), todayCheckin, hasAny));
+    const hasAny = !anySnap.empty;
+    const state = getAppState(new Date(), checkin, hasAny);
+    setAppState(state);
+
+    // Restore mid-day sub-state from persisted checkin
+    if (checkin) {
+      if (checkin.userAccepted === true) {
+        setPickedSuggestion(checkin.pickedSuggestion);
+        // Accepted — need candidate for mid-day display (loaded lazily when needed)
+      } else if (checkin.userAccepted === false) {
+        setSkipped(true);
+      }
+    }
+  }
+
+  async function loadScoringResult(checkin: Checkin) {
+    const uid = firebaseUser!.uid;
+    const [tasksSnap, contextsSnap] = await Promise.all([
+      getDocs(query(
+        collection(db, "users", uid, "tasks"),
+        where("status", "in", ["inbox", "active"]),
+      )),
+      getDocs(collection(db, "users", uid, "contexts")),
+    ]);
+
+    const tasks = tasksSnap.docs.map((d) => ({ ...d.data(), id: d.id }) as Task);
+    const contexts = contextsSnap.docs
+      .map((d) => ({ ...d.data(), id: d.id }) as Context)
+      .filter((c) => c.status === "active");
+
+    const result = computeQueue(tasks, contexts, {
+      now: new Date(),
+      timeAvailableMins: checkin.timeAvailableMins,
+      energyLevel: checkin.energyLevel,
+      dataMaturity: Math.min(1, completedDownloads / 60),
+    });
+
+    setScoringResult(result);
   }
 
   async function handleCheckinSubmit(data: {
@@ -83,24 +133,123 @@ export default function TodayPage() {
     };
 
     await setDoc(doc(db, "users", firebaseUser.uid, "checkins", dateStr), checkin);
+    checkinRef.current = checkin;
+    setTodayCheckin(checkin);
+    await loadScoringResult(checkin);
     setAppState("mid-day");
     setSubmitting(false);
+  }
+
+  function handleAccepted(candidate: ScoredCandidate, text: string) {
+    setAcceptedCandidate(candidate);
+    setPickedSuggestion(text);
+  }
+
+  function handleSkip() {
+    setSkipped(true);
   }
 
   if (loading || appState === null) return <AuthLoading />;
 
   const bg = isEvening ? "#2A1F2E" : "#FAF6EE";
 
+  // Mid-day: determine sub-state
+  const showPickFlow = appState === "mid-day" && !acceptedCandidate && !skipped;
+  const showMidDay = appState === "mid-day" && (!!acceptedCandidate || !!skipped);
+
+  // Ensure scoring result is loaded when entering pick flow
+  if (showPickFlow && !scoringResult && todayCheckin) {
+    loadScoringResult(todayCheckin);
+  }
+
   return (
-    <div style={{ minHeight: "100vh", background: bg }}>
+    <div style={{ minHeight: "100dvh", background: bg }}>
+
       {appState === "morning" && (
-        <MorningCheckin onSubmit={handleCheckinSubmit} />
+        <div style={{ padding: "56px 24px 100px" }}>
+          <MorningCheckin onSubmit={handleCheckinSubmit} />
+        </div>
       )}
-      {appState === "mid-day" && <MidDayPlaceholder />}
-      {appState === "day-zero" && <DayZero />}
-      {appState === "morning-unavailable" && <MorningUnavailable />}
+
+      {showPickFlow && (
+        <div style={{ padding: "56px 24px 100px" }}>
+          {scoringResult && !scoringResult.empty ? (
+            <PickCardFlow
+              scoringResult={scoringResult}
+              checkinDate={todayStr()}
+              uid={firebaseUser!.uid}
+              bio={userDoc?.bio ?? ""}
+              energyLevel={todayCheckin!.energyLevel}
+              timeAvailableMins={todayCheckin!.timeAvailableMins}
+              completedDownloads={completedDownloads}
+              onAccepted={handleAccepted}
+              onSkip={handleSkip}
+              onBrowse={() => router.push("/inbox")}
+            />
+          ) : scoringResult?.empty ? (
+            <div>
+              <p style={{ fontFamily: "var(--font-outfit)", fontWeight: 500, fontSize: "20px", color: "#3D2C20", margin: "0 0 8px" }}>
+                Your inbox is clear.
+              </p>
+              <p style={{ fontFamily: "var(--font-lexend)", fontWeight: 300, fontSize: "15px", color: "rgba(61,44,32,0.6)", margin: 0 }}>
+                Add something to your inbox to get a pick tomorrow.
+              </p>
+            </div>
+          ) : (
+            <AuthLoading />
+          )}
+        </div>
+      )}
+
+      {showMidDay && (
+        <div style={{ padding: "56px 24px 100px" }}>
+          {/* Mid-day holding — full implementation in #11 */}
+          {skipped ? (
+            <p style={{ fontFamily: "var(--font-lexend)", fontWeight: 300, fontSize: "18px", color: "#3D2C20" }}>
+              Take it easy today.
+            </p>
+          ) : (
+            <div>
+              {acceptedCandidate && (
+                <div style={{
+                  borderRadius: "12px", border: "1.5px solid #EDE4D4",
+                  background: "#F7F2EA", padding: "20px", marginBottom: "20px",
+                }}>
+                  <p style={{ fontFamily: "var(--font-outfit)", fontWeight: 500, fontSize: "20px", color: "#3D2C20", margin: "0 0 8px" }}>
+                    {acceptedCandidate.type === "task"
+                      ? acceptedCandidate.task!.title
+                      : acceptedCandidate.context.label}
+                  </p>
+                  <p style={{ fontFamily: "var(--font-lexend)", fontWeight: 300, fontSize: "14px", color: "rgba(61,44,32,0.6)", margin: 0 }}>
+                    {pickedSuggestion}
+                  </p>
+                </div>
+              )}
+              <p style={{ fontFamily: "var(--font-lexend)", fontWeight: 300, fontSize: "14px", color: "rgba(61,44,32,0.5)", margin: "16px 0 0" }}>
+                Full mid-day view coming in #11.
+              </p>
+            </div>
+          )}
+          <a href="/inbox" style={{ display: "block", marginTop: "20px", fontFamily: "var(--font-lexend)", fontWeight: 300, fontSize: "14px", color: "rgba(61,44,32,0.5)", textDecoration: "none" }}>
+            See your inbox →
+          </a>
+        </div>
+      )}
+
+      {appState === "day-zero" && (
+        <div style={{ padding: "56px 24px 100px" }}>
+          <DayZero />
+        </div>
+      )}
+
+      {appState === "morning-unavailable" && (
+        <div style={{ padding: "56px 24px 100px" }}>
+          <MorningUnavailable />
+        </div>
+      )}
+
       {appState === "evening" && (
-        <div style={{ padding: "40px 24px" }}>
+        <div style={{ padding: "56px 24px 100px" }}>
           <p style={{ fontFamily: "var(--font-outfit)", fontWeight: 600, fontSize: "28px", color: "#FAF6EE", marginTop: 0 }}>
             olen<span style={{ color: "#B8A4D8" }}>.</span>
           </p>
@@ -109,6 +258,7 @@ export default function TodayPage() {
           </p>
         </div>
       )}
+
       <NavBar evening={isEvening} />
     </div>
   );
