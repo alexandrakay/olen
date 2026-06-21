@@ -3,7 +3,7 @@ import { initializeApp } from "firebase-admin/app";
 initializeApp();
 
 // Sprint 5: trial expiry check (nightly scheduled function)
-// export { checkTrialExpiry } from "./scheduled/trial-expiry";
+export { checkTrialExpiry } from "./scheduled/trial-expiry";
 
 // Sprint 6: pattern writer (nightly scheduled function)
 // export { writePatterns } from "./scheduled/pattern-writer";
@@ -18,6 +18,6 @@ initializeApp();
 export { inferTaskEnergy } from "./triggers/infer-task-energy";
 
 // Sprint 5: Stripe webhook handler
-// export { stripeWebhook } from "./https/stripe-webhook";
+export { stripeWebhook } from "./https/stripe-webhook";
 
 export {};

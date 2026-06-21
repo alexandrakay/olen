@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { AuthLoading } from "@/components/auth-loading";
 import { SplashScreen } from "@/components/splash-screen";
+import { needsPaywall } from "@/lib/trial";
 
 export default function Home() {
   const { firebaseUser, userDoc, loading } = useAuth();
@@ -17,6 +18,8 @@ export default function Home() {
 
     if (!userDoc.onboardingComplete) {
       router.replace("/onboarding");
+    } else if (needsPaywall(userDoc, new Date())) {
+      router.replace("/paywall");
     } else {
       router.replace("/today");
     }
