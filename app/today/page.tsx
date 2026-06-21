@@ -195,7 +195,7 @@ export default function TodayPage() {
 
   if (loading || appState === null) return <AuthLoading />;
 
-  const bg = isEvening ? "#2A1F2E" : "#FAF6EE";
+  const bg = isEvening ? "var(--color-plum)" : "#FAF6EE";
 
   // Mid-day: determine sub-state
   const showPickFlow = appState === "mid-day" && !acceptedCandidate && !skipped;
