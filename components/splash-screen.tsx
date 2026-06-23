@@ -41,7 +41,7 @@ export function SplashScreen() {
             marginBottom: "1.5rem",
           }}
         >
-          olen<span style={{ color: "#F0956A" }}>.</span>
+          dot<span style={{ color: "#F0956A" }}>.</span>
         </p>
 
         {/* Tagline */}

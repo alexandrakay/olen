@@ -47,7 +47,7 @@ export function HoldingScreen({ onNotificationResponse }: Props) {
             marginBottom: "24px",
           }}
         >
-          olen<span style={{ color: "#F0956A" }}>.</span>
+          dot<span style={{ color: "#F0956A" }}>.</span>
         </p>
 
         <p
@@ -60,7 +60,7 @@ export function HoldingScreen({ onNotificationResponse }: Props) {
             marginBottom: "32px",
           }}
         >
-          You're all set. Olen will check in with you tomorrow morning.
+          You're all set. dot will check in with you tomorrow morning.
         </p>
 
         {!notifHandled && (

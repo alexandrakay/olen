@@ -75,7 +75,7 @@ export function ComingSoon() {
               marginBottom: "3rem",
             }}
           >
-            olen<span className="text-[#F0956A]">.</span>
+            dot<span className="text-[#F0956A]">.</span>
           </p>
 
           {/* Tagline */}
@@ -89,7 +89,7 @@ export function ComingSoon() {
               marginBottom: "3rem",
             }}
           >
-            not everything. just the next thing. olen.
+            not everything. just the next thing. dot.
           </p>
 
           {/* Email form */}

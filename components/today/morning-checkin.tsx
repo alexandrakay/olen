@@ -83,7 +83,7 @@ export function MorningCheckin({ onSubmit }: Props) {
 
       <div style={{ padding: "40px 24px 100px", maxWidth: "480px", margin: "0 auto" }}>
         <p style={{ fontFamily: "var(--font-outfit)", fontWeight: 600, fontSize: "28px", color: "#3D2C20", marginBottom: "32px", marginTop: 0 }}>
-          olen<span style={{ color: "#F0956A" }}>.</span>
+          dot<span style={{ color: "#F0956A" }}>.</span>
         </p>
 
         <div style={{ marginBottom: "32px" }}>

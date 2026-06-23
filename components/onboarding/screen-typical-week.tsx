@@ -67,7 +67,7 @@ export function ScreenTypicalWeek({ onAdvance, onBack, advancing }: Props) {
   return (
     <div style={onboardingLayout}>
       <p style={subtext}>Step 4 of 5</p>
-      <h1 style={heading}>Tell olen about your typical week.</h1>
+      <h1 style={heading}>Tell dot about your typical week.</h1>
       <p style={{ ...subtext, marginBottom: "28px" }}>It uses this to make smarter picks from day one.</p>
 
       <div style={{ marginBottom: "24px" }}>

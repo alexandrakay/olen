@@ -15,12 +15,12 @@ afterAll(() => {
 
 test("renders completedDownloads count in copy", () => {
   render(<PaywallScreen completedDownloads={7} userEmail="a@b.com" uid="u1" />);
-  expect(screen.getByText(/olen has logged 7 days with you/i)).toBeInTheDocument();
+  expect(screen.getByText(/dot has logged 7 days with you/i)).toBeInTheDocument();
 });
 
 test("renders CTA with price", () => {
   render(<PaywallScreen completedDownloads={3} userEmail="a@b.com" uid="u1" />);
-  expect(screen.getByRole("button", { name: /continue with olen/i })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /continue with dot/i })).toBeInTheDocument();
   expect(screen.getByText(/\$12\/mo/i)).toBeInTheDocument();
 });
 
@@ -43,7 +43,7 @@ test("no maybe-later option present", () => {
 test("CTA calls createCheckoutSession and redirects", async () => {
   const { createCheckoutSession } = await import("@/app/actions/create-checkout");
   render(<PaywallScreen completedDownloads={3} userEmail="a@b.com" uid="u1" />);
-  fireEvent.click(screen.getByRole("button", { name: /continue with olen/i }));
+  fireEvent.click(screen.getByRole("button", { name: /continue with dot/i }));
   await waitFor(() => {
     expect(createCheckoutSession).toHaveBeenCalledWith({ uid: "u1", email: "a@b.com" });
   });
@@ -51,6 +51,6 @@ test("CTA calls createCheckoutSession and redirects", async () => {
 
 test("CTA shows loading state while processing", async () => {
   render(<PaywallScreen completedDownloads={3} userEmail="a@b.com" uid="u1" />);
-  fireEvent.click(screen.getByRole("button", { name: /continue with olen/i }));
-  expect(screen.getByRole("button", { name: /continue with olen/i })).toBeDisabled();
+  fireEvent.click(screen.getByRole("button", { name: /continue with dot/i }));
+  expect(screen.getByRole("button", { name: /continue with dot/i })).toBeDisabled();
 });

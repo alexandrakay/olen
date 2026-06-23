@@ -1,5 +1,6 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { Mock } from "vitest";
 
 vi.mock("@/app/actions/generate-pick-text", () => ({
   generatePickText: vi.fn().mockResolvedValue({ text: "Test pick text.", promptVersion: "pick-v1" }),
@@ -112,4 +113,19 @@ test("shows post-acceptance prompt after Let's do it", async () => {
   render(<PickCardFlow {...defaultProps} />);
   await user.click(screen.getByRole("button", { name: /let's do it/i }));
   expect(await screen.findByText(/how long/i)).toBeInTheDocument();
+});
+
+test("generatePickText is called with plain serializable args — no Firestore objects", async () => {
+  const { generatePickText } = await import("@/app/actions/generate-pick-text");
+  render(<PickCardFlow {...defaultProps} />);
+  await waitFor(() => expect(generatePickText).toHaveBeenCalled());
+  const [input] = (generatePickText as Mock).mock.calls[0];
+  // Must have flat scalar fields
+  expect(input).toHaveProperty("type");
+  expect(input).toHaveProperty("contextLabel");
+  expect(input).toHaveProperty("daysSinceLastFocused");
+  // Must NOT contain Firestore model objects
+  expect(input).not.toHaveProperty("context");
+  expect(input).not.toHaveProperty("task");
+  expect(input).not.toHaveProperty("toDate");
 });

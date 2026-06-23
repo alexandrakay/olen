@@ -58,7 +58,7 @@ export const sendMorningNotifications = onSchedule("every 30 minutes", async () 
       try {
         await messaging.send({
           token: fcmToken,
-          notification: { title: "olen", body: NOTIFICATION_COPY },
+          notification: { title: "dot", body: NOTIFICATION_COPY },
         });
         await db
           .collection("users")

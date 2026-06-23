@@ -17,7 +17,7 @@ export function AuthLoading() {
           color: "#3D2C20",
         }}
       >
-        olen<span style={{ color: "#F0956A" }}>.</span>
+        dot<span style={{ color: "#F0956A" }}>.</span>
       </p>
     </div>
   );
