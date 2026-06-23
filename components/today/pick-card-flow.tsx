@@ -5,6 +5,7 @@ import { PickCard } from "@/components/today/pick-card";
 import { PostAcceptance } from "@/components/today/post-acceptance";
 import { generatePickText } from "@/app/actions/generate-pick-text";
 import { fallbackPickText } from "@/lib/pick-text";
+import type { PickTextInput } from "@/lib/pick-text";
 import { db } from "@/lib/firebase";
 import { doc, updateDoc, Timestamp } from "firebase/firestore";
 import type { ScoringResult, ScoredCandidate } from "@/lib/types";
@@ -46,12 +47,30 @@ export function PickCardFlow({
 
   const now = useRef(new Date());
 
+  function toPickTextInput(candidate: ScoredCandidate): PickTextInput {
+    const daysSinceLastFocused =
+      candidate.type === "context" && candidate.context.lastFocusedAt
+        ? Math.round(
+            (now.current.getTime() - candidate.context.lastFocusedAt.toDate().getTime()) /
+              (1000 * 60 * 60 * 24),
+          )
+        : null;
+    return {
+      type: candidate.type,
+      taskTitle: candidate.task?.title ?? null,
+      taskEstimatedMins: candidate.task?.estimatedMins ?? null,
+      contextLabel: candidate.context.label,
+      contextDescription: candidate.context.description,
+      daysSinceLastFocused,
+    };
+  }
+
   async function fetchPickText(index: number, candidate: ScoredCandidate) {
     if (generatingRef.current.has(index)) return;
     generatingRef.current.add(index);
 
     const { text } = await generatePickText(
-      candidate, bio, energyLevel, timeAvailableMins, completedDownloads, now.current,
+      toPickTextInput(candidate), bio, energyLevel, timeAvailableMins, completedDownloads,
     );
     setPickTexts((prev) => ({ ...prev, [index]: text }));
   }
@@ -68,7 +87,7 @@ export function PickCardFlow({
   const candidate = queue[pickIndex];
 
   function currentPickText(): string {
-    return pickTexts[pickIndex] ?? fallbackPickText(candidate, energyLevel, timeAvailableMins);
+    return pickTexts[pickIndex] ?? fallbackPickText(toPickTextInput(candidate), energyLevel, timeAvailableMins);
   }
 
   async function handleAccept() {
