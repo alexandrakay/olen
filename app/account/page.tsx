@@ -205,7 +205,7 @@ export default function AccountPage() {
             marginBottom: "32px",
           }}
         >
-          olen<span style={{ color: "#F0956A" }}>.</span>
+          dot<span style={{ color: "#F0956A" }}>.</span>
         </p>
 
         <p

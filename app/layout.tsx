@@ -16,7 +16,7 @@ const lexend = Lexend({
 });
 
 export const metadata: Metadata = {
-  title: "olen.",
+  title: "dot.",
   description: "The focus tool for people with too much going on.",
 };
 

@@ -15,13 +15,13 @@ export function buildPickTextPrompt(
   timeAvailableMins: 20 | 45 | 75 | 120,
   now: Date,
 ): { systemPrompt: string; userMessage: string } {
-  const systemPrompt = `You are Olen, an AI daily co-pilot. Write 1–2 sentences (max 200 chars total) about the task or context the user should focus on next.
+  const systemPrompt = `You are dot, an AI daily co-pilot. Write 1–2 sentences (max 200 chars total) about the task or context the user should focus on next.
 
 Voice rules:
 - Short sentences. No filler words.
 - Never use: "excited", "solopreneur", em dashes, or "ADHD"
 - Low energy is data, not failure. No guilt language.
-- First person from Olen's perspective, not a coach.
+- First person from dot's perspective, not a coach.
 - For context picks: low-pressure, never imperative verbs. Acknowledge the gap without guilt.
 - Max 2 sentences, ~200 chars. If you'd go longer, cut mercilessly.`;
 
@@ -78,7 +78,7 @@ export function fallbackPickText(
 }
 
 const DAY_ONE_TEXT = (contextLabel: string) =>
-  `You're just getting started — olen picked ${contextLabel} because you named it first. Check in tonight and it'll start learning.`;
+  `You're just getting started — dot picked ${contextLabel} because you named it first. Check in tonight and it'll start learning.`;
 
 export function dayOnePickText(candidate: ScoredCandidate): string {
   return DAY_ONE_TEXT(candidate.context.label);

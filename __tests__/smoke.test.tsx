@@ -5,6 +5,6 @@ function Hello({ name }: { name: string }) {
 }
 
 test("renders text", () => {
-  render(<Hello name="olen" />);
-  expect(screen.getByText("Hello, olen")).toBeInTheDocument();
+  render(<Hello name="dot" />);
+  expect(screen.getByText("Hello, dot")).toBeInTheDocument();
 });

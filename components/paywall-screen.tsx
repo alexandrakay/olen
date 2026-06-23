@@ -42,7 +42,7 @@ export function PaywallScreen({ completedDownloads, userEmail, uid }: Props) {
             marginBottom: "8px",
           }}
         >
-          olen<span style={{ color: "#F0956A" }}>.</span>
+          dot<span style={{ color: "#F0956A" }}>.</span>
         </p>
 
         <p
@@ -55,13 +55,13 @@ export function PaywallScreen({ completedDownloads, userEmail, uid }: Props) {
             marginBottom: "32px",
           }}
         >
-          olen has logged {completedDownloads} day{completedDownloads !== 1 ? "s" : ""} with you. It&rsquo;s just getting started.
+          dot has logged {completedDownloads} day{completedDownloads !== 1 ? "s" : ""} with you. It&rsquo;s just getting started.
         </p>
 
         <button
           onClick={handleCTA}
           disabled={loading}
-          aria-label="Continue with olen — $12/mo"
+          aria-label="Continue with dot — $12/mo"
           style={{
             width: "100%",
             padding: "16px",
@@ -77,7 +77,7 @@ export function PaywallScreen({ completedDownloads, userEmail, uid }: Props) {
             transition: "background 150ms",
           }}
         >
-          {loading ? "..." : "Continue with olen — $12/mo"}
+          {loading ? "..." : "Continue with dot — $12/mo"}
         </button>
 
         <p
