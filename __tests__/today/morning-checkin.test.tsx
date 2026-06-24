@@ -76,3 +76,13 @@ test("energy label updates when a bar is tapped", async () => {
   await user.click(getEnergyBar(4)); // Locked in
   expect(screen.getByText("Locked in")).toBeInTheDocument();
 });
+
+test("isEvening shows 'Good evening.' greeting", () => {
+  render(<MorningCheckin onSubmit={vi.fn()} isEvening />);
+  expect(screen.getByText("Good evening.")).toBeInTheDocument();
+});
+
+test("default (morning) shows 'Good morning.' greeting", () => {
+  render(<MorningCheckin onSubmit={vi.fn()} />);
+  expect(screen.getByText("Good morning.")).toBeInTheDocument();
+});

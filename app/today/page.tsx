@@ -211,8 +211,13 @@ export default function TodayPage() {
     <div style={{ minHeight: "100dvh", background: bg }}>
 
       {appState === "morning" && (
-        <TodayShell accent="#F0956A" sceneBg="#F4ECDC" caption="one thing at a time">
-          <MorningCheckin onSubmit={handleCheckinSubmit} />
+        <TodayShell
+          accent={isEvening ? "#B8A4D8" : "#F0956A"}
+          sceneBg={isEvening ? "#241A28" : "#F4ECDC"}
+          sceneText={isEvening ? "#FAF6EE" : "#3D2C20"}
+          caption={isEvening ? "let's figure out today" : "one thing at a time"}
+        >
+          <MorningCheckin onSubmit={handleCheckinSubmit} isEvening={isEvening} />
         </TodayShell>
       )}
 
