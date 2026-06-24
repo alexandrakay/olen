@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { AuthLoading } from "@/components/auth-loading";
 import { NavBar } from "@/components/nav-bar";
+import { TodayShell } from "@/components/today/today-shell";
 import { MorningCheckin } from "@/components/today/morning-checkin";
 import { DayZero } from "@/components/today/day-zero";
 import { MorningUnavailable } from "@/components/today/morning-unavailable";
@@ -210,13 +211,13 @@ export default function TodayPage() {
     <div style={{ minHeight: "100dvh", background: bg }}>
 
       {appState === "morning" && (
-        <div style={{ padding: "56px 24px 100px" }}>
+        <TodayShell accent="#F0956A" sceneBg="#F4ECDC" caption="one thing at a time">
           <MorningCheckin onSubmit={handleCheckinSubmit} />
-        </div>
+        </TodayShell>
       )}
 
       {showPickFlow && (
-        <div style={{ padding: "56px 24px 100px" }}>
+        <TodayShell caption="here's where I'd start">
           {scoringResult && !scoringResult.empty ? (
             <PickCardFlow
               scoringResult={scoringResult}
@@ -242,34 +243,34 @@ export default function TodayPage() {
           ) : (
             <AuthLoading />
           )}
-        </div>
+        </TodayShell>
       )}
 
       {showMidDay && todayCheckin && (
-        <div style={{ padding: "56px 24px 100px" }}>
+        <TodayShell>
           <MidDayView
             checkin={todayCheckin}
             pickedTask={pickedTask}
             pickedContext={pickedContext}
             uid={firebaseUser!.uid}
           />
-        </div>
+        </TodayShell>
       )}
 
       {appState === "day-zero" && (
-        <div style={{ padding: "56px 24px 100px" }}>
+        <TodayShell>
           <DayZero />
-        </div>
+        </TodayShell>
       )}
 
       {appState === "morning-unavailable" && (
-        <div style={{ padding: "56px 24px 100px" }}>
+        <TodayShell>
           <MorningUnavailable />
-        </div>
+        </TodayShell>
       )}
 
       {appState === "evening" && (
-        <div style={{ padding: "56px 24px 100px" }}>
+        <TodayShell accent="#B8A4D8" sceneBg="#241A28" sceneText="#FAF6EE" caption="winding down">
           {downloadDone || !todayCheckin ? (
             // Evening holding state — Download complete or day-zero evening
             <div>
@@ -299,7 +300,7 @@ export default function TodayPage() {
               onComplete={() => setDownloadDone(true)}
             />
           )}
-        </div>
+        </TodayShell>
       )}
 
       <NavBar evening={isEvening} />
