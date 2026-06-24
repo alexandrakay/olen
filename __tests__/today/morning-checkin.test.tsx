@@ -1,8 +1,24 @@
-import { render, screen, act, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+
+vi.mock("motion/react", () => ({
+  motion: new Proxy({}, {
+    get: (_t, tag: string) =>
+      ({ children, onClick, style, animate, initial, exit, transition, whileTap, "aria-hidden": ariaHidden, ...rest }: Record<string, unknown>) =>
+        React.createElement(tag, { onClick, style, "aria-hidden": ariaHidden, ...rest }, children as React.ReactNode),
+  }),
+  AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
+}));
+
 import { MorningCheckin } from "@/components/today/morning-checkin";
 
-test("renders all time options", () => {
+// Energy bars are the 5 unlabelled buttons after the 4 time buttons
+function getEnergyBar(index: 0 | 1 | 2 | 3 | 4) {
+  return screen.getAllByRole("button")[4 + index];
+}
+
+test("renders all four time options", () => {
   render(<MorningCheckin onSubmit={vi.fn()} />);
   expect(screen.getByText("15–30 min")).toBeInTheDocument();
   expect(screen.getByText("30–60 min")).toBeInTheDocument();
@@ -10,47 +26,53 @@ test("renders all time options", () => {
   expect(screen.getByText("2+ hours")).toBeInTheDocument();
 });
 
-test("renders all energy options", () => {
+test("shows 'Tap to set your energy' label on mount — nothing pre-selected", () => {
   render(<MorningCheckin onSubmit={vi.fn()} />);
-  expect(screen.getByText("Running on fumes")).toBeInTheDocument();
-  expect(screen.getByText("Steady")).toBeInTheDocument();
-  expect(screen.getByText("Locked in")).toBeInTheDocument();
+  expect(screen.getByText("Tap to set your energy")).toBeInTheDocument();
 });
 
-test("30–60 min and Steady are pre-selected", () => {
+test("CTA is not visible until both time and energy are chosen", () => {
   render(<MorningCheckin onSubmit={vi.fn()} />);
-  expect(screen.getByText("30–60 min").closest("button")).toHaveAttribute("data-selected", "true");
-  expect(screen.getByText("Steady").closest("button")).toHaveAttribute("data-selected", "true");
+  expect(screen.queryByText(/see today/i)).not.toBeInTheDocument();
 });
 
-test("updates selected value on tap", async () => {
+test("CTA stays hidden after only time is chosen", async () => {
   const user = userEvent.setup();
   render(<MorningCheckin onSubmit={vi.fn()} />);
-  await user.click(screen.getByText("2+ hours"));
-  expect(screen.getByText("2+ hours").closest("button")).toHaveAttribute("data-selected", "true");
-  expect(screen.getByText("30–60 min").closest("button")).toHaveAttribute("data-selected", "false");
+  await user.click(screen.getByText("30–60 min"));
+  expect(screen.queryByText(/see today/i)).not.toBeInTheDocument();
 });
 
-test("does not submit after only one tap", () => {
-  vi.useFakeTimers();
-  const onSubmit = vi.fn();
-  render(<MorningCheckin onSubmit={onSubmit} />);
-  fireEvent.click(screen.getByText("15–30 min"));
-  act(() => vi.advanceTimersByTime(1000));
-  expect(onSubmit).not.toHaveBeenCalled();
-  vi.useRealTimers();
+test("CTA appears once both time and energy are chosen", async () => {
+  const user = userEvent.setup();
+  render(<MorningCheckin onSubmit={vi.fn()} />);
+  await user.click(screen.getByText("30–60 min"));
+  await user.click(getEnergyBar(2)); // Steady (index 2, value 3)
+  expect(screen.getByText(/see today/i)).toBeInTheDocument();
 });
 
-test("submits 350ms after second tap with selected values", () => {
-  vi.useFakeTimers();
+test("CTA submits correct timeAvailableMins and energyLevel", async () => {
   const onSubmit = vi.fn();
+  const user = userEvent.setup();
   render(<MorningCheckin onSubmit={onSubmit} />);
-  fireEvent.click(screen.getByText("15–30 min"));
-  fireEvent.click(screen.getByText("Locked in"));
+  await user.click(screen.getByText("2+ hours"));   // 120 mins
+  await user.click(getEnergyBar(4));                 // Locked in (value 5)
+  await user.click(screen.getByText(/see today/i));
+  expect(onSubmit).toHaveBeenCalledWith({ timeAvailableMins: 120, energyLevel: 5 });
+});
+
+test("does not call onSubmit without CTA tap", async () => {
+  const onSubmit = vi.fn();
+  const user = userEvent.setup();
+  render(<MorningCheckin onSubmit={onSubmit} />);
+  await user.click(screen.getByText("15–30 min"));
+  await user.click(getEnergyBar(0)); // Running on fumes (value 1)
   expect(onSubmit).not.toHaveBeenCalled();
-  act(() => vi.advanceTimersByTime(349));
-  expect(onSubmit).not.toHaveBeenCalled();
-  act(() => vi.advanceTimersByTime(1));
-  expect(onSubmit).toHaveBeenCalledWith({ timeAvailableMins: 20, energyLevel: 5 });
-  vi.useRealTimers();
+});
+
+test("energy label updates when a bar is tapped", async () => {
+  const user = userEvent.setup();
+  render(<MorningCheckin onSubmit={vi.fn()} />);
+  await user.click(getEnergyBar(4)); // Locked in
+  expect(screen.getByText("Locked in")).toBeInTheDocument();
 });
