@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { AuthLoading } from "@/components/auth-loading";
-import { SplashScreen } from "@/components/splash-screen";
+import { LandingScreen } from "@/components/landing-screen";
 import { needsPaywall } from "@/lib/trial";
 
 export default function Home() {
@@ -26,6 +26,6 @@ export default function Home() {
   }, [loading, firebaseUser, userDoc, router]);
 
   if (loading) return <AuthLoading />;
-  if (!firebaseUser) return <SplashScreen />;
+  if (!firebaseUser) return <LandingScreen />;
   return <AuthLoading />;
 }
