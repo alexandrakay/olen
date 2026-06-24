@@ -32,7 +32,7 @@ interface ArchivePending {
 }
 
 export default function AccountPage() {
-  const { firebaseUser, userDoc, loading } = useAuth();
+  const { firebaseUser, userDoc, loading, signOut } = useAuth();
   const router = useRouter();
 
   const [contexts, setContexts] = useState<Context[]>([]);
@@ -406,6 +406,24 @@ export default function AccountPage() {
           onToggle={handleNotifToggle}
           onTimeChange={handleNotifTimeChange}
         />
+
+        <div style={{ marginTop: "48px", paddingTop: "24px", borderTop: "1px solid #EDE4D4" }}>
+          <button
+            onClick={async () => { await signOut(); router.replace("/"); }}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              fontFamily: "var(--font-lexend)",
+              fontWeight: 300,
+              fontSize: "14px",
+              color: "rgba(61,44,32,0.4)",
+              padding: 0,
+            }}
+          >
+            Sign out
+          </button>
+        </div>
       </div>
 
       {archivePendingCtx && archivePending && (
