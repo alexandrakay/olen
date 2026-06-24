@@ -1,5 +1,16 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
+
+vi.mock("motion/react", () => ({
+  motion: new Proxy({}, {
+    get: (_t, tag: string) =>
+      ({ children, onClick, style, animate, initial, exit, transition, whileTap, ...rest }: Record<string, unknown>) =>
+        React.createElement(tag, { onClick, style, ...rest }, children as React.ReactNode),
+  }),
+  AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
+}));
+
 import { PickCard } from "@/components/today/pick-card";
 import type { ScoredCandidate, Context, Task } from "@/lib/types";
 import type { Timestamp } from "firebase/firestore";
