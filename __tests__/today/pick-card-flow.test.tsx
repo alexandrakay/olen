@@ -1,6 +1,28 @@
+import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { Mock } from "vitest";
+
+const _motionCache: Record<string, (props: Record<string, unknown>) => React.ReactElement> = {};
+vi.mock("motion/react", () => ({
+  motion: new Proxy({}, {
+    get: (_t, tag: string) =>
+      (_motionCache[tag] ??= ({ children, onClick, style, "aria-hidden": ah, ...rest }: Record<string, unknown>) =>
+        React.createElement(tag as string, { onClick, style, "aria-hidden": ah, ...rest }, children as React.ReactNode)),
+  }),
+  AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
+}));
+
+vi.mock("@/components/today/pick-reward", () => ({
+  PickReward: ({ title, celebrate, onSkip }: { title: string; celebrate?: boolean; onSkip: () => void }) => (
+    <div>
+      <p>That&apos;s the one.</p>
+      <p>{title}</p>
+      {celebrate !== undefined && <span data-celebrate={String(celebrate)} />}
+      <button onClick={onSkip}>Skip</button>
+    </div>
+  ),
+}));
 
 vi.mock("@/app/actions/generate-pick-text", () => ({
   generatePickText: vi.fn().mockResolvedValue({ text: "Test pick text.", promptVersion: "pick-v1" }),
@@ -108,11 +130,31 @@ test("Call it triggers onSkip", async () => {
   expect(onSkip).toHaveBeenCalled();
 });
 
-test("shows post-acceptance prompt after Let's do it", async () => {
+test("shows PickReward after Let's do it", async () => {
   const user = userEvent.setup();
   render(<PickCardFlow {...defaultProps} />);
   await user.click(screen.getByRole("button", { name: /let's do it/i }));
-  expect(await screen.findByText(/how long/i)).toBeInTheDocument();
+  expect(await screen.findByText(/that.s the one/i)).toBeInTheDocument();
+});
+
+test("PickReward receives the accepted task title", async () => {
+  const user = userEvent.setup();
+  render(<PickCardFlow {...defaultProps} />);
+  await user.click(screen.getByRole("button", { name: /let's do it/i }));
+  expect(await screen.findByText("Write proposal")).toBeInTheDocument();
+});
+
+test("celebrate prop is passed through to PickReward", async () => {
+  const user = userEvent.setup();
+  render(<PickCardFlow {...defaultProps} celebrate={false} />);
+  await user.click(screen.getByRole("button", { name: /let's do it/i }));
+  const el = await screen.findByTestId !== undefined
+    ? document.querySelector("[data-celebrate]")
+    : null;
+  // Verify celebrate=false reaches PickReward via data attribute
+  await screen.findByText(/that.s the one/i);
+  const span = document.querySelector("[data-celebrate='false']");
+  expect(span).toBeInTheDocument();
 });
 
 test("generatePickText is called with plain serializable args — no Firestore objects", async () => {

@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { AnimatePresence } from "motion/react";
 import { PickCard } from "@/components/today/pick-card";
-import { PostAcceptance } from "@/components/today/post-acceptance";
+import { PickReward } from "@/components/today/pick-reward";
 import { generatePickText } from "@/app/actions/generate-pick-text";
 import { fallbackPickText } from "@/lib/pick-text";
 import type { PickTextInput } from "@/lib/pick-text";
+import { getContextColor } from "@/lib/context-colors";
 import { db } from "@/lib/firebase";
 import { doc, updateDoc, Timestamp } from "firebase/firestore";
 import type { ScoringResult, ScoredCandidate } from "@/lib/types";
@@ -21,6 +23,8 @@ interface Props {
   onAccepted: (candidate: ScoredCandidate, pickText: string) => void;
   onSkip: () => void;
   onBrowse?: () => void;
+  /** Pass false to disable the celebration burst (reduced motion). */
+  celebrate?: boolean;
 }
 
 type FlowState = "picking" | "post-acceptance" | "third-rejection";
@@ -36,6 +40,7 @@ export function PickCardFlow({
   onAccepted,
   onSkip,
   onBrowse,
+  celebrate = true,
 }: Props) {
   const { queue } = scoringResult;
   const [pickIndex, setPickIndex] = useState(0);
@@ -82,6 +87,7 @@ export function PickCardFlow({
         fetchPickText(i, queue[i]);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pickIndex, queue]);
 
   const candidate = queue[pickIndex];
@@ -163,8 +169,22 @@ export function PickCardFlow({
     onSkip();
   }
 
-  if (flowState === "post-acceptance") {
-    return <PostAcceptance onSubmit={handlePostAcceptanceSubmit} onSkip={handlePostAcceptanceSkip} />;
+  if (flowState === "post-acceptance" && acceptedCandidate) {
+    const color = getContextColor(acceptedCandidate.context.priority);
+    const title =
+      acceptedCandidate.type === "task"
+        ? acceptedCandidate.task!.title
+        : acceptedCandidate.context.label;
+    return (
+      <PickReward
+        bandColor={color.band}
+        cardBg={color.bg}
+        title={title}
+        celebrate={celebrate}
+        onSubmit={handlePostAcceptanceSubmit}
+        onSkip={handlePostAcceptanceSkip}
+      />
+    );
   }
 
   if (flowState === "third-rejection") {
@@ -212,12 +232,16 @@ export function PickCardFlow({
 
   if (!candidate) return null;
 
+  // AnimatePresence lets the rejected card slide out as the next springs in.
   return (
-    <PickCard
-      candidate={candidate}
-      pickText={currentPickText()}
-      onAccept={handleAccept}
-      onReject={handleReject}
-    />
+    <AnimatePresence mode="wait">
+      <PickCard
+        key={pickIndex}
+        candidate={candidate}
+        pickText={currentPickText()}
+        onAccept={handleAccept}
+        onReject={handleReject}
+      />
+    </AnimatePresence>
   );
 }
